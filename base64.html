@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Base64 Encoder</title>
+  <script>
+    // Listen for messages from Thunkable
+    window.addEventListener('message', function(event) {
+        const imageData = event.data;
+        if (imageData) {
+            // Convert the base64 image data to a Blob
+            const blob = base64ToBlob(imageData);
+
+            // Create a File object from the Blob
+            const file = new File([blob], "image.jpg", { type: "image/jpeg" });
+
+            // Encode the File object to base64
+            encodeImage(file);
+        }
+    });
+
+    // Function to convert base64 to Blob
+    function base64ToBlob(base64Data) {
+        const byteCharacters = atob(base64Data);
+        const byteArrays = [];
+
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+        }
+
+        return new Blob(byteArrays, { type: "image/jpeg" });
+    }
+
+    // Function to encode an image file to base64
+    function encodeImage(file) {
+        const reader = new FileReader();
+        reader.onloadend = function() {
+            const base64String = reader.result.split(',')[1]; // Remove data:image/jpeg;base64, part
+            console.log(base64String);
+            window.ReactNativeWebView.postMessage(base64String);
+        }
+        reader.readAsDataURL(file);
+    }
+  </script>
+</head>
+<body>
+</body>
+</html>
