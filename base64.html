@@ -8,54 +8,42 @@
             margin: 10px;
             color: #333;
         }
+        #log {
+            font-family: monospace;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background: #f5f5f5;
+        }
     </style>
 </head>
 <body>
     <div id="status">Ready to convert image...</div>
+    <div id="log"></div>
 
     <script>
-        // Function to send message back to Thunkable
-        function sendToThunkable(message) {
-            // Try all possible message posting methods
-            try {
-                // Method 1: Direct window.postMessage
-                window.parent.postMessage(message, '*');
-                document.getElementById('status').textContent = 'Sent via window.parent';
-            } catch (e1) {
-                try {
-                    // Method 2: ReactNativeWebView
-                    window.ReactNativeWebView.postMessage(message);
-                    document.getElementById('status').textContent = 'Sent via ReactNativeWebView';
-                } catch (e2) {
-                    try {
-                        // Method 3: Thunkable Extension
-                        window.ThunkableWebviewerExtension.postMessage(message);
-                        document.getElementById('status').textContent = 'Sent via ThunkableWebviewerExtension';
-                    } catch (e3) {
-                        document.getElementById('status').textContent = 'Error sending: ' + e3.message;
-                    }
-                }
-            }
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += message + '<br>';
+            console.log(message);
         }
 
-        // Function to receive image URL from Thunkable
         function receiveMessage(event) {
-            document.getElementById('status').textContent = 'Received message: ' + event.data;
+            log('Received message: ' + event.data);
             const imageUrl = event.data;
             if (imageUrl) {
                 convertImage(imageUrl);
             }
         }
 
-        // Convert image to base64
         function convertImage(imageUrl) {
-            document.getElementById('status').textContent = 'Starting conversion...';
+            log('Starting conversion for: ' + imageUrl);
             
             const img = new Image();
-            img.crossOrigin = "Anonymous";  // This is important for CORS
+            img.crossOrigin = "Anonymous";
             
             img.onload = function() {
-                document.getElementById('status').textContent = 'Image loaded, converting...';
+                log('Image loaded successfully');
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
@@ -65,23 +53,24 @@
                 
                 try {
                     const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
-                    document.getElementById('status').textContent = 'Conversion successful, sending...';
-                    sendToThunkable(base64);
+                    log('Conversion successful, sending back...');
+                    window.parent.postMessage(base64, '*');
+                    log('Message sent back to Thunkable');
                 } catch (error) {
-                    document.getElementById('status').textContent = 'Error converting: ' + error.message;
+                    log('Error converting: ' + error.message);
                 }
             };
             
-            img.onerror = function() {
-                document.getElementById('status').textContent = 'Error loading image: ' + imageUrl;
+            img.onerror = function(error) {
+                log('Error loading image: ' + error.message);
             };
             
+            log('Setting image source...');
             img.src = imageUrl;
         }
 
-        // Listen for messages from Thunkable
         window.addEventListener('message', receiveMessage, false);
-        document.getElementById('status').textContent = 'Converter ready! Waiting for image...';
+        log('Converter ready and listening for messages');
     </script>
 </body>
 </html>
