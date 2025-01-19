@@ -14,8 +14,33 @@
     <div id="status">Ready to convert image...</div>
 
     <script>
+        // Function to send message back to Thunkable
+        function sendToThunkable(message) {
+            // Try all possible message posting methods
+            try {
+                // Method 1: Direct window.postMessage
+                window.parent.postMessage(message, '*');
+                document.getElementById('status').textContent = 'Sent via window.parent';
+            } catch (e1) {
+                try {
+                    // Method 2: ReactNativeWebView
+                    window.ReactNativeWebView.postMessage(message);
+                    document.getElementById('status').textContent = 'Sent via ReactNativeWebView';
+                } catch (e2) {
+                    try {
+                        // Method 3: Thunkable Extension
+                        window.ThunkableWebviewerExtension.postMessage(message);
+                        document.getElementById('status').textContent = 'Sent via ThunkableWebviewerExtension';
+                    } catch (e3) {
+                        document.getElementById('status').textContent = 'Error sending: ' + e3.message;
+                    }
+                }
+            }
+        }
+
         // Function to receive image URL from Thunkable
         function receiveMessage(event) {
+            document.getElementById('status').textContent = 'Received message: ' + event.data;
             const imageUrl = event.data;
             if (imageUrl) {
                 convertImage(imageUrl);
@@ -24,10 +49,13 @@
 
         // Convert image to base64
         function convertImage(imageUrl) {
+            document.getElementById('status').textContent = 'Starting conversion...';
+            
             const img = new Image();
-            img.crossOrigin = "Anonymous";
+            img.crossOrigin = "Anonymous";  // This is important for CORS
             
             img.onload = function() {
+                document.getElementById('status').textContent = 'Image loaded, converting...';
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
@@ -37,16 +65,15 @@
                 
                 try {
                     const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
-                    document.getElementById('status').textContent = 'Conversion successful!';
-                    // Send base64 back to Thunkable
-                    window.parent.postMessage(base64, '*');
+                    document.getElementById('status').textContent = 'Conversion successful, sending...';
+                    sendToThunkable(base64);
                 } catch (error) {
                     document.getElementById('status').textContent = 'Error converting: ' + error.message;
                 }
             };
             
             img.onerror = function() {
-                document.getElementById('status').textContent = 'Error loading image';
+                document.getElementById('status').textContent = 'Error loading image: ' + imageUrl;
             };
             
             img.src = imageUrl;
@@ -54,7 +81,7 @@
 
         // Listen for messages from Thunkable
         window.addEventListener('message', receiveMessage, false);
-        document.getElementById('status').textContent = 'Converter ready!';
+        document.getElementById('status').textContent = 'Converter ready! Waiting for image...';
     </script>
 </body>
 </html>
