@@ -2,64 +2,115 @@
 <html>
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Image Picker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug Image Picker</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: transparent;
+        #status {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <input type="file" accept="image/*" id="inputFile" style="display: none;" capture="environment"/>
+    <input type="file" accept="image/*" id="inputFile" style="display: none;" />
+    <div id="status">Waiting for initialization...</div>
+
     <script>
-        const inputFile = document.getElementById("inputFile");
-
-        function convertImageToBase64(file) {
-            return new Promise((resolve, reject) => {
-                if (file.size > 5 * 1024 * 1024) {
-                    reject(new Error("File too large (max 5MB)"));
-                    return;
+        const status = document.getElementById('status');
+        const inputFile = document.getElementById('inputFile');
+        
+        // Debug logging function
+        function log(message) {
+            status.textContent = message;
+            console.log(message);
+            try {
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage("DEBUG: " + message);
                 }
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function sendToThunkable(data) {
-            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                window.ReactNativeWebView.postMessage(data);
-            } else if (window.parent && window.parent.postMessage) {
-                window.parent.postMessage(data, "*");
+            } catch (e) {
+                console.error("Error sending debug message:", e);
             }
         }
 
-        // Listen for messages from Thunkable
+        // Initialize
+        log("Page loaded, setting up listeners...");
+
+        // Listen for Thunkable messages
         window.addEventListener('message', function(event) {
+            log("Received message: " + event.data);
             if (event.data === 'openPicker') {
+                log("Opening file picker...");
                 inputFile.click();
             }
-        });
+        }, false);
 
-        inputFile.addEventListener("change", async (event) => {
+        // Handle file selection
+        inputFile.addEventListener('change', function(event) {
+            log("File selected, processing...");
             const file = event.target.files[0];
-            if (!file) return;
             
-            try {
-                if (!file.type.startsWith('image/')) {
-                    throw new Error("Please select an image file");
+            if (!file) {
+                log("No file selected");
+                return;
+            }
+
+            log("File type: " + file.type + ", size: " + file.size + " bytes");
+
+            const reader = new FileReader();
+            
+            reader.onloadstart = () => log("Starting file read...");
+            
+            reader.onload = function(e) {
+                log("File read complete, sending to Thunkable...");
+                const base64 = e.target.result;
+                
+                // Try multiple methods to communicate with Thunkable
+                try {
+                    if (window.ReactNativeWebView) {
+                        window.ReactNativeWebView.postMessage(base64);
+                        log("Sent via ReactNativeWebView");
+                    } else {
+                        window.parent.postMessage(base64, '*');
+                        log("Sent via postMessage");
+                    }
+                } catch (error) {
+                    log("Error sending: " + error.message);
                 }
-                const base64String = await convertImageToBase64(file);
-                sendToThunkable(base64String);
-                inputFile.value = "";
+            };
+
+            reader.onerror = function(error) {
+                log("Error reading file: " + error);
+            };
+
+            try {
+                reader.readAsDataURL(file);
             } catch (error) {
-                sendToThunkable("ERROR: " + error.message);
+                log("Error starting file read: " + error);
             }
         });
+
+        // Test communication with Thunkable
+        setTimeout(() => {
+            log("Testing Thunkable communication...");
+            try {
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage("TEST_MESSAGE");
+                    log("Test message sent via ReactNativeWebView");
+                } else {
+                    window.parent.postMessage("TEST_MESSAGE", '*');
+                    log("Test message sent via postMessage");
+                }
+            } catch (error) {
+                log("Error sending test message: " + error);
+            }
+        }, 1000);
     </script>
 </body>
 </html>
