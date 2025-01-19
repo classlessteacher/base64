@@ -2,60 +2,27 @@
 <html>
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Image Picker</title>
     <style>
         body {
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .container {
-            text-align: center;
-        }
-        #status {
-            margin-top: 20px;
-            color: #666;
-        }
-        #pick-image {
-            background: #007AFF;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #pick-image:hover {
-            background: #0056b3;
+            padding: 0;
+            background: transparent;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <input type="file" accept="image/*" id="inputFile" style="display: none;" />
-        <button id="pick-image">Choose Image</button>
-        <div id="status"></div>
-    </div>
-
+    <input type="file" accept="image/*" id="inputFile" style="display: none;" capture="environment"/>
     <script>
         const inputFile = document.getElementById("inputFile");
-        const pickButton = document.getElementById("pick-image");
-        const status = document.getElementById("status");
 
-        // Function to convert image to Base64
         function convertImageToBase64(file) {
             return new Promise((resolve, reject) => {
-                // Check file size (limit to 5MB)
                 if (file.size > 5 * 1024 * 1024) {
-                    reject(new Error("File size too large (max 5MB)"));
+                    reject(new Error("File too large (max 5MB)"));
                     return;
                 }
-
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result);
                 reader.onerror = error => reject(error);
@@ -63,7 +30,6 @@
             });
         }
 
-        // Function to send message to Thunkable
         function sendToThunkable(data) {
             if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
                 window.ReactNativeWebView.postMessage(data);
@@ -72,34 +38,25 @@
             }
         }
 
-        // Handle button click
-        pickButton.addEventListener("click", () => {
-            inputFile.click();
+        // Listen for messages from Thunkable
+        window.addEventListener('message', function(event) {
+            if (event.data === 'openPicker') {
+                inputFile.click();
+            }
         });
 
-        // Handle file selection
         inputFile.addEventListener("change", async (event) => {
             const file = event.target.files[0];
             if (!file) return;
-
-            status.textContent = "Converting image...";
             
             try {
-                // Validate file type
                 if (!file.type.startsWith('image/')) {
                     throw new Error("Please select an image file");
                 }
-
                 const base64String = await convertImageToBase64(file);
-                status.textContent = "Sending to Thunkable...";
                 sendToThunkable(base64String);
-                status.textContent = "Image processed successfully!";
-                
-                // Reset input for next use
                 inputFile.value = "";
             } catch (error) {
-                status.textContent = "Error: " + error.message;
-                console.error("Error processing image:", error);
                 sendToThunkable("ERROR: " + error.message);
             }
         });
