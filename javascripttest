@@ -1,0 +1,12 @@
+bridge = {
+    test: function() {
+        // Simple test function to verify bridge is working
+        return "Bridge is connected!";
+    },
+    
+    simpleAlert: function(message) {
+        // Test function that shows an alert
+        alert("Message received: " + message);
+        return "Alert shown!";
+    }
+};
