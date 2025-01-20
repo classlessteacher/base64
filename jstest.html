@@ -1,21 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Picker</title>
+    <title>Image Capture</title>
     <script src="https://thunkable.github.io/webviewer-extension/thunkableWebviewerExtension.js" type="text/javascript"></script>
+    <style>
+        body {
+            background-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
+        .capture-btn {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
     <script>
-        // When we receive a message from Thunkable to open the picker
-        ThunkableWebviewerExtension.receiveMessage(function(message) {
-            if (message === 'openPicker') {
-                document.getElementById('fileInput').click();
+        // Convert file to base64
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Handle file selection
+        async function handleFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                try {
+                    const base64String = await getBase64(file);
+                    ThunkableWebviewerExtension.postMessage(base64String);
+                } catch (error) {
+                    console.error('Error converting to base64:', error);
+                    ThunkableWebviewerExtension.postMessage('error:' + error.message);
+                }
             }
-        });
+        }
+
+        // Initialize the page
+        window.onload = function() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', handleFile);
+
+            // Listen for messages from Thunkable
+            ThunkableWebviewerExtension.receiveMessage(function(message) {
+                if (message === 'openPicker') {
+                    document.getElementById('fileInput').click();
+                }
+            });
+        };
     </script>
 </head>
 <body>
     <input type="file" 
            id="fileInput" 
            accept="image/*" 
+           capture="environment"
            style="display: none;">
+    <button class="capture-btn" onclick="document.getElementById('fileInput').click()">
+        Take Photo or Choose Image
+    </button>
 </body>
 </html>
