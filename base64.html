@@ -1,69 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Image Picker with Web Bridge</title>
-    <script>
-        // Define the bridge object
-        let bridge = {
-            pickImage: async function () {
-                try {
-                    // Create and trigger file input
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-
-                    // Convert the file selection to a Promise
-                    const getFile = new Promise((resolve) => {
-                        input.onchange = (e) => resolve(e.target.files[0]);
-                    });
-
-                    // Trigger file selection
-                    input.click();
-
-                    // Wait for file selection
-                    const file = await getFile;
-
-                    if (!file) {
-                        throw new Error('No file selected');
-                    }
-
-                    // Convert to base64
-                    const reader = new FileReader();
-                    const base64Promise = new Promise((resolve, reject) => {
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = () => reject(new Error('Failed to read file'));
-                    });
-
-                    reader.readAsDataURL(file);
-
-                    // Return the Base64 result
-                    return await base64Promise;
-                } catch (error) {
-                    throw new Error('Failed to pick image: ' + error.message);
-                }
-            },
-        };
-
-        // Expose the bridge object to Thunkable's Web Bridge
-        window.webviewBridge = {
-            invoke: async function (methodName, args) {
-                if (typeof bridge[methodName] === 'function') {
-                    try {
-                        const result = await bridge[methodName](...(args || []));
-                        return { status: 'success', result };
-                    } catch (error) {
-                        return { status: 'error', message: error.message };
-                    }
-                } else {
-                    return { status: 'error', message: `Method ${methodName} not found on bridge` };
-                }
-            },
-        };
-    </script>
+  <title>Image Picker</title>
 </head>
 <body>
-    <h1>Image Picker Web Bridge</h1>
+  <input type="file" id="file-upload" accept="image/*" style="display: none;">
+
+  <script>
+    const fileInput = document.getElementById('file-upload');
+
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        // Send the base64 data to Thunkable
+        window.ReactNativeWebView.postMessage(e.target.result);
+      }
+
+      if (file) {
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Listen for a message from Thunkable to trigger the file input
+    document.addEventListener("message", function(event) {
+        if (event.data === "openImagePicker") {
+            fileInput.click(); // Programmatically click the hidden input
+        }
+    });
+  </script>
 </body>
 </html>
