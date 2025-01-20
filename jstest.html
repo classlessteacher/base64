@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Message Test</title>
+</head>
+<body>
+  <div id="messageArea"></div>
+
+  <script>
+    document.addEventListener("message", function(event) {
+      if (event.data === "buttonPressed") {
+        document.getElementById("messageArea").textContent = "Button was pressed in Thunkable!";
+      }
+    });
+  </script>
+</body>
+</html>
