@@ -1,34 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Image Picker</title>
+    <title>Thunkable File Upload</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        #status {
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <input type="file" id="file-upload" accept="image/*" style="display: none;">
+    <input type="file" id="file-upload" accept="image/*" style="display: none;">
+    <div id="status">Waiting for Thunkable button click...</div>
 
-  <script>
-    const fileInput = document.getElementById('file-upload');
+    <script>
+        const fileInput = document.getElementById('file-upload');
+        const status = document.getElementById('status');
 
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
+        // Handle file selection
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                status.textContent = 'Reading file...';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        window.ReactNativeWebView.postMessage(e.target.result);
+                        status.textContent = 'File sent to Thunkable!';
+                    } catch (error) {
+                        status.textContent = 'Error: ' + error.message;
+                        console.error('Error:', error);
+                    }
+                };
+                
+                reader.onerror = function(error) {
+                    status.textContent = 'Error reading file';
+                    console.error('FileReader error:', error);
+                };
 
-      reader.onload = function(e) {
-        // Send the base64 data to Thunkable
-        window.ReactNativeWebView.postMessage(e.target.result);
-      }
+                reader.readAsDataURL(file);
+            }
+        });
 
-      if (file) {
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Listen for a message from Thunkable to trigger the file input
-    document.addEventListener("message", function(event) {
-        if (event.data === "openImagePicker") {
-            fileInput.click(); // Programmatically click the hidden input
-        }
-    });
-  </script>
+        // Listen for message from Thunkable button
+        document.addEventListener('message', function(event) {
+            const message = event.data || event.detail;
+            if (message === 'openImagePicker') {
+                status.textContent = 'Opening file picker...';
+                fileInput.click();
+            }
+        });
+    </script>
 </body>
 </html>
