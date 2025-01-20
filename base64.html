@@ -53,14 +53,26 @@
             }
         });
 
-        // Listen for message from Thunkable button
-        document.addEventListener('message', function(event) {
-            const message = event.data || event.detail;
+        // Function to handle messages from Thunkable
+        function handleThunkableMessage(message) {
+            status.textContent = 'Received message: ' + message;
             if (message === 'openImagePicker') {
                 status.textContent = 'Opening file picker...';
                 fileInput.click();
             }
+        }
+
+        // Set up message handling for Thunkable
+        window.addEventListener('message', function(event) {
+            handleThunkableMessage(event.data);
         });
+
+        // Alternative message handling method
+        if (window.ReactNativeWebView) {
+            window.onmessage = function(event) {
+                handleThunkableMessage(event.data);
+            };
+        }
     </script>
 </body>
 </html>
