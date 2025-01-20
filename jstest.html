@@ -2,15 +2,19 @@
 <html>
 <head>
   <title>Message Test</title>
+  <script src="https://thunkable.github.io/webviewer-extension/thunkableWebviewerExtension.js" type="text/javascript"></script>
 </head>
 <body>
   <div id="messageArea"></div>
 
   <script>
-    document.addEventListener("message", function(event) {
-      if (event.data === "buttonPressed") {
+    // Receive message from Thunkable
+    ThunkableWebviewerExtension.receiveMessage(function(message) {
+      if (message === "buttonPressed") {
         document.getElementById("messageArea").textContent = "Button was pressed in Thunkable!";
-        window.ReactNativeWebView.postMessage("Message received by Web Viewer!");
+
+        // Send a message back to Thunkable
+        ThunkableWebviewerExtension.postMessage("Message received by Web Viewer!");
       }
     });
   </script>
