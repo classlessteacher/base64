@@ -10,6 +10,7 @@
     document.addEventListener("message", function(event) {
       if (event.data === "buttonPressed") {
         document.getElementById("messageArea").textContent = "Button was pressed in Thunkable!";
+        window.ReactNativeWebView.postMessage("Message received by Web Viewer!");
       }
     });
   </script>
