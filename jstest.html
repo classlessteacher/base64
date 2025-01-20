@@ -11,7 +11,7 @@
     // Receive message from Thunkable
     ThunkableWebviewerExtension.receiveMessage(function(message) {
       if (message === "buttonPressed") {
-        document.getElementById("messageArea").textContent = "Button was pressed in Thunkable!";
+        document.getElementById("messageArea").textContent = "Button was pressed in Thunkable!1";
 
         // Send a message back to Thunkable
         ThunkableWebviewerExtension.postMessage("Message received by Web Viewer!");
